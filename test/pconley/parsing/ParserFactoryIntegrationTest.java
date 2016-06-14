@@ -10,9 +10,23 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 
+import pconley.parsing.parse.BooleanParser;
+import pconley.parsing.parse.DateRangeParser;
+import pconley.parsing.parse.NotNegativeIntegerParser;
+import pconley.parsing.parse.Parser;
+import pconley.parsing.validate.Validator;
+
 public class ParserFactoryIntegrationTest {
 
 	private Map<String, String> params;
+
+	private class ResampleTypeValidator implements Validator<Integer> {
+
+		@Override
+		public boolean validate(Integer value) {
+			return value == 1 || value == 3 || value == 5;
+		}
+	}
 
 	@Before
 	public void setDefaultParams() {
@@ -27,17 +41,17 @@ public class ParserFactoryIntegrationTest {
 
 	@Test
 	public void allValid() {
-		ParserFactory factory = new ParserFactory(params);
-		factory.addNotNegativeIntegerParser("userId");
-		factory.addNotNegativeIntegerParser("sensorId");
-		factory.addParser(
-				"dateRange",
-				new DateRangeParser(params.get("dateFrom"), params
-						.get("dateTo")));
-		factory.addBooleanParser("clean");
-		factory.addNotNegativeIntegerParser("resampleType");
+		ParserRunner factory = new ParserRunner();
+		factory.addParser("userId", new NotNegativeIntegerParser(params.get("userId")));
+		factory.addParser("sensorId", new NotNegativeIntegerParser(params.get("sensorId")));
+		factory.addParser( "dateRange", new DateRangeParser(params.get("dateFrom"), params.get("dateTo")));
+		factory.addParser("clean", new BooleanParser(params.get("clean")));;
 
-		assertEquals(ParserFactory.Status.VALID, factory.parse());
+		Parser<Integer> resampleTypeParser = new NotNegativeIntegerParser(params.get("resampleType"));
+		resampleTypeParser.addValidator(new ResampleTypeValidator());
+		factory.addParser("resampleType", resampleTypeParser);
+
+		assertEquals(ParserRunner.Status.VALID, factory.parse());
 		assertEquals(0, factory.getFailedParsers().size());
 	}
 
@@ -45,17 +59,14 @@ public class ParserFactoryIntegrationTest {
 	public void oneInvalidValue() {
 		params.put("userId", "-1");
 
-		ParserFactory factory = new ParserFactory(params);
-		factory.addNotNegativeIntegerParser("userId");
-		factory.addNotNegativeIntegerParser("sensorId");
-		factory.addParser(
-				"dateRange",
-				new DateRangeParser(params.get("dateFrom"), params
-						.get("dateTo")));
-		factory.addBooleanParser("clean");
-		factory.addNotNegativeIntegerParser("resampleType");
+		ParserRunner factory = new ParserRunner();
+		factory.addParser("userId", new NotNegativeIntegerParser(params.get("userId")));
+		factory.addParser("sensorId", new NotNegativeIntegerParser(params.get("sensorId")));
+		factory.addParser( "dateRange", new DateRangeParser(params.get("dateFrom"), params.get("dateTo")));
+		factory.addParser("clean", new BooleanParser(params.get("clean")));;
+		factory.addParser("resampleType", new NotNegativeIntegerParser(params.get("resampleType")));
 
-		assertEquals(ParserFactory.Status.INVALID_VALUE, factory.parse());
+		assertEquals(ParserRunner.Status.INVALID_VALUE, factory.parse());
 		assertEquals(1, factory.getFailedParsers().size());
 		assertEquals("userId", factory.getFailedParsers().get(0));
 	}
@@ -65,42 +76,51 @@ public class ParserFactoryIntegrationTest {
 		params.put("userId", "-1");
 		params.put("dateFrom", "100");
 		params.put("dateTo", "50");
-		
+
 		Set<String> expectedInvalidParams = new HashSet<String>();
 		expectedInvalidParams.add("userId");
 		expectedInvalidParams.add("dateRange");
 
-		ParserFactory factory = new ParserFactory(params);
-		factory.addNotNegativeIntegerParser("userId");
-		factory.addNotNegativeIntegerParser("sensorId");
-		factory.addParser(
-				"dateRange",
-				new DateRangeParser(params.get("dateFrom"), params
-						.get("dateTo")));
-		factory.addBooleanParser("clean");
-		factory.addNotNegativeIntegerParser("resampleType");
+		ParserRunner factory = new ParserRunner();
+		factory.addParser("userId", new NotNegativeIntegerParser(params.get("userId")));
+		factory.addParser("sensorId", new NotNegativeIntegerParser(params.get("sensorId")));
+		factory.addParser( "dateRange", new DateRangeParser(params.get("dateFrom"), params.get("dateTo")));
+		factory.addParser("clean", new BooleanParser(params.get("clean")));;
+		factory.addParser("resampleType", new NotNegativeIntegerParser(params.get("resampleType")));
 
-		assertEquals(ParserFactory.Status.INVALID_VALUE, factory.parse());
+		assertEquals(ParserRunner.Status.INVALID_VALUE, factory.parse());
 		assertEquals(expectedInvalidParams, new HashSet<String>(factory.getFailedParsers()));
 	}
-	
+
 	@Test
 	public void invalidValueAndMissingValue() {
 		params.put("userId", "-1");
 		params.remove("sensorId");
 
-		ParserFactory factory = new ParserFactory(params);
-		factory.addNotNegativeIntegerParser("userId");
-		factory.addNotNegativeIntegerParser("sensorId");
-		factory.addParser(
-				"dateRange",
-				new DateRangeParser(params.get("dateFrom"), params
-						.get("dateTo")));
-		factory.addBooleanParser("clean");
-		factory.addNotNegativeIntegerParser("resampleType");
+		ParserRunner factory = new ParserRunner();
+		factory.addParser("userId", new NotNegativeIntegerParser(params.get("userId")));
+		factory.addParser("sensorId", new NotNegativeIntegerParser(params.get("sensorId")));
+		factory.addParser( "dateRange", new DateRangeParser(params.get("dateFrom"), params.get("dateTo")));
+		factory.addParser("clean", new BooleanParser(params.get("clean")));;
+		factory.addParser("resampleType", new NotNegativeIntegerParser(params.get("resampleType")));
 
-		assertEquals(ParserFactory.Status.MISSING, factory.parse());
+		assertEquals(ParserRunner.Status.MISSING, factory.parse());
 		assertEquals(1, factory.getFailedParsers().size());
 		assertEquals("sensorId", factory.getFailedParsers().get(0));
+	}
+
+	@Test
+	public void missingOptionalValue() {
+		params.remove("clean");
+
+		ParserRunner factory = new ParserRunner();
+		factory.addParser("userId", new NotNegativeIntegerParser(params.get("userId")));
+		factory.addParser("sensorId", new NotNegativeIntegerParser(params.get("sensorId")));
+		factory.addParser( "dateRange", new DateRangeParser(params.get("dateFrom"), params.get("dateTo")));
+		factory.addParser("clean", new BooleanParser(params.get("clean"), true));;
+		factory.addParser("resampleType", new NotNegativeIntegerParser(params.get("resampleType")));
+
+		assertEquals(ParserRunner.Status.VALID, factory.parse());
+		assertEquals(0, factory.getFailedParsers().size());
 	}
 }

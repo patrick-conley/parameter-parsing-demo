@@ -1,4 +1,5 @@
-package pconley.parsing;
+package pconley.parsing.parse;
+
 
 public class BooleanParser extends Parser<Boolean> {
 
@@ -6,8 +7,12 @@ public class BooleanParser extends Parser<Boolean> {
 		super(param);
 	}
 
+	public BooleanParser(String param, boolean optional) {
+		super(param, optional);
+	}
+
 	@Override
-	protected boolean isFormatValid() {
+	public boolean parse() {
 		try {
 			value = Boolean.parseBoolean(param);
 		} catch (NumberFormatException e) {

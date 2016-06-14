@@ -1,11 +1,12 @@
-package pconley.parsing;
+package pconley.parsing.parse;
 
 import java.util.Date;
 
 import pconley.parsing.util.Pair;
+import pconley.parsing.validate.Validator;
 
-public class DateRangeParser extends Parser<Pair<Date,Date>> {
-	
+public class DateRangeParser extends Parser<Pair<Date, Date>> {
+
 	String strFrom;
 	String strTo;
 
@@ -13,15 +14,23 @@ public class DateRangeParser extends Parser<Pair<Date,Date>> {
 		super("");
 		this.strFrom = strFrom;
 		this.strTo = strTo;
+
+		addValidator(new Validator<Pair<Date, Date>>() {
+
+			@Override
+			public boolean validate(Pair<Date, Date> value) {
+				return value.first().before(value.second());
+			}
+		});
 	}
 
 	@Override
-	protected boolean isPresent() {
+	public boolean isDefined() {
 		return !(strFrom == null || strTo == null || strFrom.isEmpty() || strTo.isEmpty());
 	}
-	
+
 	@Override
-	protected boolean isFormatValid() {
+	public boolean parse() {
 		Date dateFrom, dateTo;
 
 		try {
@@ -30,14 +39,9 @@ public class DateRangeParser extends Parser<Pair<Date,Date>> {
 		} catch (NumberFormatException e) {
 			return false;
 		}
-		
-		value = new Pair<Date,Date>(dateFrom, dateTo);
+
+		value = new Pair<Date, Date>(dateFrom, dateTo);
 		return true;
-	}
-	
-	@Override
-	protected boolean isValueValid() {
-		return value.first().before(value.second());
 	}
 
 }
