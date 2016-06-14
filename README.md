@@ -9,3 +9,6 @@ Improvements
  * (Maybe?) Get rid of `params` param and custom parser-adders in
    `ParserFactory`: make the caller create its own parsers. `ParserFactory` is
    obviously not a factory in that case
+ * Remove the method `Parser.isValueValid`. Create an interface `Validator`
+   and add the method `public final boolean Parser.addValidator(Validator v)`.
+   `ParserFactory` should run each `Validator` defined
